@@ -5,43 +5,39 @@ ENV LANG C.UTF-8
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
 # Install dependencies
+# Core tools, test utilities, headless GUI bits, and clean python alternative
+# (Note: we don't need the TurtleBot3 stacks for TortoiseBot)
 RUN set -x \
     && apt-get update \
     && apt-get --with-new-pkgs upgrade -y \
-    && apt-get install -y git \
     && apt-get install -y \
-        ros-noetic-turtlebot3 \
-        ros-noetic-turtlebot3-bringup \
-        ros-noetic-turtlebot3-description \
-        ros-noetic-turtlebot3-example \
-        ros-noetic-turtlebot3-gazebo \
-        ros-noetic-turtlebot3-msgs \
-        ros-noetic-turtlebot3-navigation \
-        ros-noetic-turtlebot3-simulations \
-        ros-noetic-turtlebot3-slam \
-        ros-noetic-turtlebot3-teleop \
-        ros-noetic-gmapping \
-        ros-noetic-slam-gmapping \
-        ros-noetic-openslam-gmapping \
+        git \
+        python3-rosdep python3-pip python-is-python3 \
+        ros-noetic-rostest \
+        ros-noetic-gazebo-ros-pkgs ros-noetic-gazebo-ros-control \
+        xvfb x11-apps \
     && rm -rf /var/lib/apt/lists/*
 
+# Helpful for headless rendering in CI/containers without GPU
+ENV LIBGL_ALWAYS_SOFTWARE=1
 # Fix python symlink
-RUN ln -s /usr/bin/python3 /usr/bin/python
 
 # Setup workspace
 RUN mkdir -p /root/simulation_ws/src
-WORKDIR /root/simulation_ws
+WORKDIR /root/simulation_ws/src
 
 # Copy local TortoiseBot simulation package into src/
-COPY tortoisebot ./src/tortoisebot
+WORKDIR /root/simulation_ws/src
+RUN mkdir -p tortoisebot
+RUN git clone https://github.com/Regvith/tortoisebot.git tortoisebot
+RUN mkdir -p tortoisebot_waypoints
 
 # Clone your waypoints package (replace with your repo URL if needed)
-RUN git clone https://github.com/Regvith/tortoisebot_waypoints.git src/tortoisebot_waypoints
-
+RUN git clone https://github.com/Regvith/tortoisebot_waypoints.git tortoisebot_waypoints
+WORKDIR /root/simulation_ws/
 # Install dependencies and build
-RUN rosdep update \
-    && rosdep install --from-paths src --ignore-src -r -y \
-    && /bin/bash -c "source /opt/ros/noetic/setup.bash && catkin_make"
+RUN  /bin/bash -c " cd /root/simulation_ws/ && source /opt/ros/noetic/setup.bash && catkin_make"
+
 
 # Source workspace on container start
 RUN echo "source /opt/ros/noetic/setup.bash" >> /root/.bashrc \
