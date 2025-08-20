@@ -3,8 +3,8 @@ pipeline {
 
     environment {
         IMAGE = "ros1_ci:latest"
-        COMPOSE_FILE = "/home/user/ros_jenkins_ws/src/ros1_ci/docker-compose.yml"
-        PROJECT_DIR = "/home/user/ros_jenkins_ws/src/ros1_ci"
+        COMPOSE_FILE = "/home/user/simulation_ws/src/ros1_ci/docker-compose.yml"
+        PROJECT_DIR = "/home/user/simulation_ws/src/ros1_ci"
     }
 
     stages {
